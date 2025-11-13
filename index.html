@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graduation Invitation</title>
+<style>
+html, body {
+  margin: 0;
+  height: 100%;
+  background-color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Giữ khoảng hiển thị nhỏ hơn */
+.container {
+  perspective: 2000px;
+  width: 80vw;
+  height: 80vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Card hiển thị nhỏ hơn một chút (90% chiều cao) */
+.card {
+  position: relative;
+  height: 70vh; /* nhỏ hơn để không chạm viền trên/dưới */
+  aspect-ratio: 2.17 / 1; /* đúng tỉ lệ ảnh 5.75x2.65 inch */
+  transform-style: preserve-3d;
+  transition: transform 0.2s linear;
+  cursor: grab;
+  border-radius: 10px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+/* Hai mặt của thiệp */
+.side {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+/* Ảnh giữ nguyên tỉ lệ, không bao giờ cắt */
+.front img, .back img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* hiển thị toàn ảnh */
+  background-color: black;
+  display: block;
+}
+
+.front { transform: rotateY(0deg); }
+.back { transform: rotateY(180deg); }
+
+audio { display: none; }
+
+/* Tự động chừa vùng notch iPhone */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+  }
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div id="card" class="card">
+      <div class="side front"><img src="front.jpg" alt="Front"></div>
+      <div class="side back"><img src="back.jpg" alt="Back"></div>
+    </div>
+  </div>
+
+  <audio id="music" loop>
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+
+<script>
+const card = document.getElementById('card');
+const music = document.getElementById('music');
+let isDragging = false;
+let currentRotation = 0;
+let startX = 0;
+let velocity = 0;
+let animationFrame;
+
+function playMusic() {
+  if (music.paused) music.play().catch(()=>{});
+}
+
+function startDrag(x) {
+  isDragging = true;
+  startX = x;
+  card.style.cursor = 'grabbing';
+  playMusic();
+  cancelAnimationFrame(animationFrame);
+}
+
+function moveDrag(x) {
+  if (!isDragging) return;
+  const dx = x - startX;
+  currentRotation += dx * 0.5;
+  velocity = dx * 0.5;
+  card.style.transform = `rotateY(${currentRotation}deg)`;
+  startX = x;
+}
+
+function endDrag() {
+  if (!isDragging) return;
+  isDragging = false;
+  card.style.cursor = 'grab';
+  function inertia() {
+    currentRotation += velocity;
+    velocity *= 0.95;
+    card.style.transform = `rotateY(${currentRotation}deg)`;
+    if (Math.abs(velocity) > 0.2) requestAnimationFrame(inertia);
+  }
+  requestAnimationFrame(inertia);
+}
+
+card.addEventListener('mousedown', e => startDrag(e.clientX));
+document.addEventListener('mousemove', e => moveDrag(e.clientX));
+document.addEventListener('mouseup', endDrag);
+
+card.addEventListener('touchstart', e => startDrag(e.touches[0].clientX), {passive:true});
+card.addEventListener('touchmove', e => moveDrag(e.touches[0].clientX), {passive:true});
+card.addEventListener('touchend', endDrag);
+</script>
+</body>
+</html>
